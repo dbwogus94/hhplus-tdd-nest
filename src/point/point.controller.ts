@@ -2,21 +2,19 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Patch,
   ValidationPipe,
 } from '@nestjs/common';
-import { PointHistory, TransactionType, UserPoint } from './point.model';
-import { UserPointTable } from 'src/database/userpoint.table';
-import { PointHistoryTable } from 'src/database/pointhistory.table';
+
 import { PointBody as PointDto } from './point.dto';
+import { PointHistory, UserPoint } from './point.model';
+import { PointServiceUseCase } from './point.service';
 
 @Controller('/point')
 export class PointController {
-  constructor(
-    private readonly userDb: UserPointTable,
-    private readonly historyDb: PointHistoryTable,
-  ) {}
+  constructor(private readonly pointService: PointServiceUseCase) {}
 
   /**
    * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
@@ -33,7 +31,8 @@ export class PointController {
   @Get(':id/histories')
   async history(@Param('id') id): Promise<PointHistory[]> {
     const userId = Number.parseInt(id);
-    return [];
+    // return [];
+    throw new NotFoundException('미구현 API 입니다.');
   }
 
   /**
@@ -46,7 +45,8 @@ export class PointController {
   ): Promise<UserPoint> {
     const userId = Number.parseInt(id);
     const amount = pointDto.amount;
-    return { id: userId, point: amount, updateMillis: Date.now() };
+    // return { id: userId, point: amount, updateMillis: Date.now() };
+    throw new NotFoundException('미구현 API 입니다.');
   }
 
   /**
@@ -59,6 +59,7 @@ export class PointController {
   ): Promise<UserPoint> {
     const userId = Number.parseInt(id);
     const amount = pointDto.amount;
-    return { id: userId, point: amount, updateMillis: Date.now() };
+    // return { id: userId, point: amount, updateMillis: Date.now() };
+    throw new NotFoundException('미구현 API 입니다.');
   }
 }
