@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { PointHistoryTable } from 'src/database/pointhistory.table';
 import { UserPointTable } from 'src/database/userpoint.table';
@@ -119,7 +119,14 @@ export class PointService extends PointServiceUseCase {
   }
 
   override async getPoint(userId: number): Promise<GetUserPointResponse> {
-    throw new Error('Method not implemented.');
+    if (userId == null) throw new BadRequestException('userId 필수 입니다.');
+    if (Number.isNaN(userId))
+      throw new BadRequestException('userId는 숫자형만 가능합니다.');
+    if (userId < 0)
+      throw new BadRequestException('userId는 양의 정수만 가능 합니다.');
+
+    const userPoint = await this.userDb.selectById(userId);
+    return GetUserPointResponse.of(userPoint);
   }
 
   override async getHistory(
