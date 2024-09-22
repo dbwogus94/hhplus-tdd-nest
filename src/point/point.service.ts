@@ -2,8 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 import { PointHistoryTable } from 'src/database/pointhistory.table';
 import { UserPointTable } from 'src/database/userpoint.table';
-import { PointHistory, UserPoint } from './point.model';
-import { PointBody as PointDto } from './dto/request/point.dto';
+import {
+  GetUserPointResponse,
+  GetPointHistoryResponse,
+  PatchPointRequest,
+} from './dto';
 
 export abstract class PointServiceUseCase {
   /**
@@ -25,7 +28,7 @@ export abstract class PointServiceUseCase {
    * - `userId`가 양의 정수가 아니라면 조회에 실패한다.
    * @param userId
    */
-  abstract getPoint(userId: number): Promise<UserPoint>;
+  abstract getPoint(userId: number): Promise<GetUserPointResponse>;
 
   /**
    * 특정 유저의 포인트 충전/이용 내역을 조회합니다.
@@ -46,7 +49,7 @@ export abstract class PointServiceUseCase {
    * - `userId`가 양의 정수가 아니라면 조회에 실패한다.
    * @param userId
    */
-  abstract getHistory(userId: number): Promise<PointHistory[]>;
+  abstract getHistory(userId: number): Promise<GetPointHistoryResponse[]>;
 
   /**
    * 특정 유저의 포인트를 충전합니다.
@@ -72,7 +75,10 @@ export abstract class PointServiceUseCase {
    * @param userId
    * @param pointDto
    */
-  abstract charge(userId: number, pointDto: PointDto): Promise<UserPoint>;
+  abstract charge(
+    userId: number,
+    pointDto: PatchPointRequest,
+  ): Promise<GetUserPointResponse>;
 
   /**
    * 특정 유저의 포인트를 사용합니다.
@@ -97,7 +103,10 @@ export abstract class PointServiceUseCase {
    * @param userId
    * @param pointDto
    */
-  abstract use(userId: number, pointDto: PointDto): Promise<UserPoint>;
+  abstract use(
+    userId: number,
+    pointDto: PatchPointRequest,
+  ): Promise<GetUserPointResponse>;
 }
 
 @Injectable()
@@ -109,22 +118,27 @@ export class PointService extends PointServiceUseCase {
     super();
   }
 
-  override async getPoint(userId: number): Promise<UserPoint> {
+  override async getPoint(userId: number): Promise<GetUserPointResponse> {
     throw new Error('Method not implemented.');
   }
 
-  override async getHistory(userId: number): Promise<PointHistory[]> {
+  override async getHistory(
+    userId: number,
+  ): Promise<GetPointHistoryResponse[]> {
     throw new Error('Method not implemented.');
   }
 
   override async charge(
     userId: number,
-    pointDto: PointDto,
-  ): Promise<UserPoint> {
+    pointDto: PatchPointRequest,
+  ): Promise<GetUserPointResponse> {
     throw new Error('Method not implemented.');
   }
 
-  override async use(userId: number, pointDto: PointDto): Promise<UserPoint> {
+  override async use(
+    userId: number,
+    pointDto: PatchPointRequest,
+  ): Promise<GetUserPointResponse> {
     throw new Error('Method not implemented.');
   }
 }
