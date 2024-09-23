@@ -138,6 +138,19 @@ describe('PointService', () => {
       // then
       expect(results.length).toBe(3);
     });
+
+    it('(성공) userId`가 1인 유저의 포인트 사용내역이 없다면 빈 배열을 반환한다.', async () => {
+      // given
+      const userId = 1;
+      const pointhistories = [];
+      // mocking
+      historyDb.selectAllByUserId.mockResolvedValue(pointhistories);
+
+      // when
+      const results = await service.getHistory(userId);
+      // then
+      expect(results.length).toBe(0);
+    });
   });
 
   // describe('charge', () => {});
