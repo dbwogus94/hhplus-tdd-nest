@@ -7,6 +7,15 @@ import {
   GetPointHistoryResponse,
   PatchPointRequest,
 } from './dto';
+import { TransactionType } from './point.model';
+
+/*
+  TODO: 리펙터링
+  1. userId 검증은 어떻게 할까? 
+    - 그냥 컨트롤러 Pipe로 해결
+    - param Valdate 정의?
+    - 
+*/
 
 export abstract class PointServiceUseCase {
   /**
@@ -132,7 +141,14 @@ export class PointService extends PointServiceUseCase {
   override async getHistory(
     userId: number,
   ): Promise<GetPointHistoryResponse[]> {
-    throw new Error('Method not implemented.');
+    if (userId == null) throw new BadRequestException('userId 필수 입니다.');
+    if (Number.isNaN(userId))
+      throw new BadRequestException('userId는 숫자형만 가능합니다.');
+    if (userId < 0)
+      throw new BadRequestException('userId는 양의 정수만 가능 합니다.');
+
+    const histories = await this.historyDb.selectAllByUserId(userId);
+    return GetPointHistoryResponse.of(histories);
   }
 
   override async charge(

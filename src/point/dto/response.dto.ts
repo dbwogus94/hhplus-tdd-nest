@@ -33,7 +33,13 @@ export class GetPointHistoryResponse
     readonly timeMillis: number,
   ) {}
 
-  static of(history: PointHistory) {
+  static of(history: PointHistory[]): GetPointHistoryResponse[];
+  static of(history: PointHistory): GetPointHistoryResponse;
+  static of(
+    history: PointHistory | PointHistory[],
+  ): GetPointHistoryResponse | GetPointHistoryResponse[] {
+    if (Array.isArray(history)) return history.map((point) => this.of(point));
+
     const { id, userId, type, amount, timeMillis } = history;
     return new GetPointHistoryResponse(id, userId, type, amount, timeMillis);
   }
