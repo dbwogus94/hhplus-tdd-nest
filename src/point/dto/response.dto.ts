@@ -11,6 +11,11 @@ export class GetUserPointResponse
     readonly point: number,
     readonly updateMillis: number,
   ) {}
+
+  static of(userPoint: UserPoint) {
+    const { id, point, updateMillis } = userPoint;
+    return new GetUserPointResponse(id, point, updateMillis);
+  }
 }
 
 /**
@@ -27,4 +32,15 @@ export class GetPointHistoryResponse
     readonly amount: number,
     readonly timeMillis: number,
   ) {}
+
+  static of(history: PointHistory[]): GetPointHistoryResponse[];
+  static of(history: PointHistory): GetPointHistoryResponse;
+  static of(
+    history: PointHistory | PointHistory[],
+  ): GetPointHistoryResponse | GetPointHistoryResponse[] {
+    if (Array.isArray(history)) return history.map((point) => this.of(point));
+
+    const { id, userId, type, amount, timeMillis } = history;
+    return new GetPointHistoryResponse(id, userId, type, amount, timeMillis);
+  }
 }
