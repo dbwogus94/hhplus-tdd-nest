@@ -7,7 +7,6 @@ import {
   GetPointHistoryResponse,
   PatchPointRequest,
 } from './dto';
-import { TransactionType } from './point.model';
 
 /*
   TODO: 리펙터링
@@ -20,42 +19,12 @@ import { TransactionType } from './point.model';
 export abstract class PointServiceUseCase {
   /**
    * 특정 유저의 포인트를 조회합니다.
-   *
-   * ### 행동 분석
-   * 1. HTTP URL Path를 통해 id(userId)를 넘겨 받는다.
-   * 2. id를 검증한다.
-   * 3. 유저의 포인트 현재 포인트를 조회한다.
-   *   - `UserPointTable#selectById` 로직에 의해 유저가 존재하지 않는 경우는 생략한다.
-   * 4. 결과에 맞게 반환한다.
-   *
-   * ### TC
-   * 1. 성공
-   * - 유저의 현재 포인트를 조회한다.
-   * - 최초에 유저의 포인트가 없다면 포인트는 0을 응답한다.
-   * 2. 실패
-   * - `userId`가 존재하지 않으면(null이거나 undefined) 실패힌다.
-   * - `userId`가 양의 정수가 아니라면 조회에 실패한다.
    * @param userId
    */
   abstract getPoint(userId: number): Promise<GetUserPointResponse>;
 
   /**
    * 특정 유저의 포인트 충전/이용 내역을 조회합니다.
-   *
-   * ### 행동 분석
-   * 1. HTTP URL Path를 통해 id(userId)를 넘겨 받는다.
-   * 2. id를 검증한다.
-   *   - `UserPointTable#selectById` 로직에 의해 유저가 존재하지 않는 경우는 생략한다.
-   * 3. 유저의 포인트 충전/이용 내역을 조회한다.
-   * 4. 결과에 맞게 반환한다.
-   *
-   * ### TC
-   * 1. 성공
-   * - 포인트 충전/이용 내역이을 응답한다.
-   * - 포인트 충전/이용 내역이 없는 유저라면 빈 배열을 응답한다.
-   * 2. 실패
-   * - `userId`가 존재하지 않으면(null이거나 undefined) 실패힌다.
-   * - `userId`가 양의 정수가 아니라면 조회에 실패한다.
    * @param userId
    */
   abstract getHistory(userId: number): Promise<GetPointHistoryResponse[]>;
