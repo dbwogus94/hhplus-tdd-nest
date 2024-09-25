@@ -1,8 +1,11 @@
 import { PointHistoryTable } from 'src/database/pointhistory.table';
 import { UserPointTable } from 'src/database/userpoint.table';
 import { PointHistory, UserPoint } from './point.model';
+import { Injectable } from '@nestjs/common';
 
-type InsertPointBody = Pick<PointHistory, 'amount' | 'type'>;
+type InsertPointBody = Pick<PointHistory, 'amount' | 'type'> & {
+  point: number;
+};
 
 export abstract class PointRepositoryPort {
   abstract findPointBy(userId: number): Promise<UserPoint>;
@@ -22,6 +25,7 @@ export abstract class PointRepositoryPort {
   ): Promise<UserPoint>;
 }
 
+@Injectable()
 export class PointRepository extends PointRepositoryPort {
   constructor(
     private readonly userDb: UserPointTable,
@@ -42,11 +46,8 @@ export class PointRepository extends PointRepositoryPort {
     userId: number,
     body: InsertPointBody,
   ): Promise<UserPoint> {
-    const { amount, type } = body;
+    const { point, amount, type } = body;
     await this.historyDb.insert(userId, amount, type, Date.now());
-    const userPoint = await this.userDb.selectById(userId);
-
-    const updatePoint = userPoint.point + amount;
-    return await this.userDb.insertOrUpdate(userId, updatePoint);
+    return await this.userDb.insertOrUpdate(userId, point);
   }
 }
