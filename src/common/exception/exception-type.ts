@@ -11,8 +11,10 @@ type ApplicationExceptionRecord = Record<
 >;
 
 export enum ApplicationExceptionCode {
+  /** 유효하지 않은 UserId 사용시 발생하는 에러 코드 */
   INVALID_USER_ID = 'INVALID_USER_ID',
-  INVALID_CHARGE_AMOUNT = 'INVALID_CHARGE_AMOUNT',
+  /** 유효하지 않은 포인트 금액 사용시 발생하는 에러 코드 */
+  INVALID_POINT_AMOUNT = 'INVALID_POINT_AMOUNT',
 }
 
 export const ApplicationExceptionRecord: ApplicationExceptionRecord = {
@@ -21,8 +23,8 @@ export const ApplicationExceptionRecord: ApplicationExceptionRecord = {
     state: 400,
   },
 
-  [ApplicationExceptionCode.INVALID_CHARGE_AMOUNT]: {
-    message: '충전 금액은 0보다 커야 합니다.',
+  [ApplicationExceptionCode.INVALID_POINT_AMOUNT]: {
+    message: '포인트 금액은 0보다 커야 합니다.',
     state: 400,
   },
 } as const;
