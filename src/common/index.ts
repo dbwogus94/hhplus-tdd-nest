@@ -1,2 +1,2 @@
-export * from './interceptor/response.interceptor';
+export * from './interceptor/convet-exception.interceptor';
 export * from './exception';
