@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
@@ -34,30 +33,19 @@ export class PointController {
     return await this.pointService.getHistories(userId);
   }
 
-  /**
-   * TODO - 특정 유저의 포인트를 충전하는 기능을 작성해주세요.
-   */
   @Patch(':id/charge')
   async charge(
     @Param('id', ParseIntPipe) userId: number,
     @Body(ValidationPipe) pointDto: PatchPointRequest,
   ): Promise<GetUserPointResponse> {
-    const amount = pointDto.amount;
-
-    // return { id: userId, point: amount, updateMillis: Date.now() };
-    throw new NotFoundException('미구현 API 입니다.');
+    return await this.pointService.charge(userId, pointDto);
   }
 
-  /**
-   * TODO - 특정 유저의 포인트를 사용하는 기능을 작성해주세요.
-   */
   @Patch(':id/use')
   async use(
     @Param('id', ParseIntPipe) userId: number,
     @Body(ValidationPipe) pointDto: PatchPointRequest,
   ): Promise<GetUserPointResponse> {
-    const amount = pointDto.amount;
-    // return { id: userId, point: amount, updateMillis: Date.now() };
-    throw new NotFoundException('미구현 API 입니다.');
+    return await this.pointService.use(userId, pointDto);
   }
 }
