@@ -11,7 +11,7 @@ import {
   InvalidUserIdException,
 } from './exception';
 
-import { PointManager } from './component';
+import { PointManager, ConcurrentManager } from './component';
 import { PointRepositoryPort } from './point.repository';
 import { TransactionType } from './point.model';
 
@@ -76,41 +76,51 @@ export class PointService extends PointServiceUseCase {
     userId: number,
     pointDto: PatchPointRequest,
   ): Promise<GetUserPointResponse> {
-    if (userId < 0) throw new InvalidUserIdException();
-    if (pointDto.amount < 0) throw new InvalidPointAmountException();
+    const releaseLock = await ConcurrentManager.acquireLock(userId);
+    try {
+      if (userId < 0) throw new InvalidUserIdException();
+      if (pointDto.amount < 0) throw new InvalidPointAmountException();
 
-    const { point: currantPoint } = await this.pointRepo.findPointBy(userId);
-    if (!PointManager.canChargePoint(currantPoint, pointDto.amount)) {
-      throw new ConflictPointOperationException();
+      const { point: currantPoint } = await this.pointRepo.findPointBy(userId);
+      if (!PointManager.canChargePoint(currantPoint, pointDto.amount)) {
+        throw new ConflictPointOperationException();
+      }
+
+      const point = PointManager.addPoint(currantPoint, pointDto.amount);
+      const result = await this.pointRepo.insertPointWithTransaction(userId, {
+        point,
+        amount: pointDto.amount,
+        type: TransactionType.CHARGE,
+      });
+      return GetUserPointResponse.of(result);
+    } finally {
+      releaseLock();
     }
-
-    const point = PointManager.addPoint(currantPoint, pointDto.amount);
-    const result = await this.pointRepo.insertPointWithTransaction(userId, {
-      point,
-      amount: pointDto.amount,
-      type: TransactionType.CHARGE,
-    });
-    return GetUserPointResponse.of(result);
   }
 
   override async use(
     userId: number,
     pointDto: PatchPointRequest,
   ): Promise<GetUserPointResponse> {
-    if (userId < 0) throw new InvalidUserIdException();
-    if (pointDto.amount < 0) throw new InvalidPointAmountException();
+    const releaseLock = await ConcurrentManager.acquireLock(userId);
+    try {
+      if (userId < 0) throw new InvalidUserIdException();
+      if (pointDto.amount < 0) throw new InvalidPointAmountException();
 
-    const { point: currantPoint } = await this.pointRepo.findPointBy(userId);
-    if (!PointManager.canUsePoint(currantPoint, pointDto.amount)) {
-      throw new ConflictPointOperationException();
+      const { point: currantPoint } = await this.pointRepo.findPointBy(userId);
+      if (!PointManager.canUsePoint(currantPoint, pointDto.amount)) {
+        throw new ConflictPointOperationException();
+      }
+
+      const point = PointManager.subPoint(currantPoint, pointDto.amount);
+      const result = await this.pointRepo.insertPointWithTransaction(userId, {
+        point,
+        amount: pointDto.amount,
+        type: TransactionType.USE,
+      });
+      return GetUserPointResponse.of(result);
+    } finally {
+      releaseLock();
     }
-
-    const point = PointManager.subPoint(currantPoint, pointDto.amount);
-    const result = await this.pointRepo.insertPointWithTransaction(userId, {
-      point,
-      amount: pointDto.amount,
-      type: TransactionType.USE,
-    });
-    return GetUserPointResponse.of(result);
   }
 }
