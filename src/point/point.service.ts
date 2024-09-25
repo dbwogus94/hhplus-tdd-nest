@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-import { PointHistoryTable } from 'src/database/pointhistory.table';
-import { UserPointTable } from 'src/database/userpoint.table';
 import {
   GetPointHistoryResponse,
   GetUserPointResponse,
@@ -13,14 +11,7 @@ import {
 } from './exception';
 
 import { TransactionType } from './point.model';
-
-/*
-  TODO: 리펙터링
-  1. userId 검증은 어떻게 할까? 
-    - 그냥 컨트롤러 Pipe로 해결
-    - param Valdate 정의?
-    - 
-*/
+import { PointRepositoryPort } from './point.repository';
 
 export abstract class PointServiceUseCase {
   /**
@@ -60,19 +51,14 @@ export abstract class PointServiceUseCase {
 
 @Injectable()
 export class PointService extends PointServiceUseCase {
-  readonly list = {};
-
-  constructor(
-    private readonly userDb: UserPointTable,
-    private readonly historyDb: PointHistoryTable,
-  ) {
+  constructor(private readonly pointRepo: PointRepositoryPort) {
     super();
   }
 
   override async getPoint(userId: number): Promise<GetUserPointResponse> {
     if (userId < 0) throw new InvalidUserIdException();
 
-    const userPoint = await this.userDb.selectById(userId);
+    const userPoint = await this.pointRepo.findPointBy(userId);
     return GetUserPointResponse.of(userPoint);
   }
 
@@ -80,8 +66,7 @@ export class PointService extends PointServiceUseCase {
     userId: number,
   ): Promise<GetPointHistoryResponse[]> {
     if (userId < 0) throw new InvalidUserIdException();
-
-    const histories = await this.historyDb.selectAllByUserId(userId);
+    const histories = await this.pointRepo.findHistoriesBy(userId);
     return GetPointHistoryResponse.of(histories);
   }
 
@@ -92,16 +77,12 @@ export class PointService extends PointServiceUseCase {
     if (userId < 0) throw new InvalidUserIdException();
     if (pointDto.amount < 0) throw new InvalidPointAmountException();
 
-    await this.historyDb.insert(
-      userId,
-      pointDto.amount,
-      TransactionType.CHARGE,
-      Date.now(),
-    );
-
-    const userPoint = await this.userDb.selectById(userId);
-    const updatePoint = userPoint.point + pointDto.amount;
-    const result = await this.userDb.insertOrUpdate(userId, updatePoint);
+    const { point: currantPoint } = await this.pointRepo.findPointBy(userId);
+    const result = await this.pointRepo.insertPointWithTransaction(userId, {
+      point: currantPoint + pointDto.amount,
+      amount: pointDto.amount,
+      type: TransactionType.CHARGE,
+    });
     return GetUserPointResponse.of(result);
   }
 
@@ -112,16 +93,12 @@ export class PointService extends PointServiceUseCase {
     if (userId < 0) throw new InvalidUserIdException();
     if (pointDto.amount < 0) throw new InvalidPointAmountException();
 
-    await this.historyDb.insert(
-      userId,
-      pointDto.amount,
-      TransactionType.USE,
-      Date.now(),
-    );
-
-    const userPoint = await this.userDb.selectById(userId);
-    const updatePoint = userPoint.point - pointDto.amount;
-    const result = await this.userDb.insertOrUpdate(userId, updatePoint);
+    const { point: currantPoint } = await this.pointRepo.findPointBy(userId);
+    const result = await this.pointRepo.insertPointWithTransaction(userId, {
+      point: currantPoint - pointDto.amount,
+      amount: pointDto.amount,
+      type: TransactionType.USE,
+    });
     return GetUserPointResponse.of(result);
   }
 }

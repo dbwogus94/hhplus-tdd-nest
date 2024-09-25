@@ -1,10 +1,10 @@
 import { faker } from '@faker-js/faker';
 import { type MockProxy, mock } from 'jest-mock-extended';
+import { PointManager } from 'src/point/component';
 
-import { PointHistoryTable } from 'src/database/pointhistory.table';
-import { UserPointTable } from 'src/database/userpoint.table';
 import { GetPointHistoryResponse, GetUserPointResponse } from 'src/point/dto';
 import {
+  ConflictPointOperationException,
   InvalidPointAmountException,
   InvalidUserIdException,
 } from 'src/point/exception';
@@ -13,17 +13,19 @@ import {
   TransactionType,
   UserPoint,
 } from 'src/point/point.model';
+import {
+  PointRepository,
+  PointRepositoryPort,
+} from 'src/point/point.repository';
 import { PointService } from 'src/point/point.service';
 
 describe('PointService', () => {
-  let userDb: MockProxy<UserPointTable>;
-  let historyDb: MockProxy<PointHistoryTable>;
+  let pointRepo: MockProxy<PointRepositoryPort>;
   let service: PointService;
 
   beforeEach(() => {
-    userDb = mock<UserPointTable>();
-    historyDb = mock<PointHistoryTable>();
-    service = new PointService(userDb, historyDb);
+    pointRepo = mock<PointRepository>();
+    service = new PointService(pointRepo);
   });
 
   /**
@@ -60,7 +62,7 @@ describe('PointService', () => {
         const success = GetUserPointResponse.of(resultMockPoint);
 
         // mocking
-        userDb.selectById.mockResolvedValue(resultMockPoint);
+        pointRepo.findPointBy.mockResolvedValue(resultMockPoint);
 
         // when
         const result = await service.getPoint(userId);
@@ -104,7 +106,7 @@ describe('PointService', () => {
         const success = GetPointHistoryResponse.of(resultMockPointHistories);
 
         // mocking
-        historyDb.selectAllByUserId.mockResolvedValue(resultMockPointHistories);
+        pointRepo.findHistoriesBy.mockResolvedValue(resultMockPointHistories);
 
         // when
         const results = await service.getHistories(userId);
@@ -120,7 +122,7 @@ describe('PointService', () => {
         const success = GetPointHistoryResponse.of(pointhistories);
 
         // mocking
-        historyDb.selectAllByUserId.mockResolvedValue(pointhistories);
+        pointRepo.findHistoriesBy.mockResolvedValue(pointhistories);
 
         // when
         const results = await service.getHistories(userId);
@@ -137,6 +139,7 @@ describe('PointService', () => {
    * 2. 실패
    * - `userId`가 양수가 아니라면 실패한다.
    * - `pointDto.amount`가 양의 정수가 아니라면 실패한다.
+   * - 충전 한도에 초과하면 실패한다.
    */
   describe('charge', () => {
     describe('실패한다.', () => {
@@ -179,21 +182,14 @@ describe('PointService', () => {
         const success = GetUserPointResponse.of(resultMockUserPoint);
 
         // mocking
-        historyDb.insert.mockResolvedValue({
-          id: 1,
-          userId: userId,
-          type: TransactionType.CHARGE,
-          amount: chargeAmount,
-          timeMillis: Date.now(),
-        });
-        userDb.selectById.mockResolvedValue({
+        pointRepo.findPointBy.mockResolvedValue({
           id: userId,
           point: defaultPoint,
           updateMillis: Date.now() - 60000,
         });
-
-        // 결과 mocking
-        userDb.insertOrUpdate.mockResolvedValue(resultMockUserPoint);
+        pointRepo.insertPointWithTransaction.mockResolvedValue(
+          resultMockUserPoint,
+        );
 
         // when
         const result = await service.charge(userId, { amount: chargeAmount });
@@ -211,6 +207,7 @@ describe('PointService', () => {
    * 2. 실패
    * - `userId`가 양수가 아니라면 실패한다.
    * - `pointDto.amount`가 양의 정수가 아니라면 실패한다.
+   * - 잔액부족이면 사용에 실패한다.
    */
   describe('use', () => {
     describe('실패한다.', () => {
@@ -254,21 +251,14 @@ describe('PointService', () => {
         const success = GetUserPointResponse.of(resultMockUserPoint);
 
         // mocking
-        historyDb.insert.mockResolvedValue({
-          id: 1,
-          userId: userId,
-          type: TransactionType.USE,
-          amount: useAmount,
-          timeMillis: Date.now(),
-        });
-        userDb.selectById.mockResolvedValue({
+        pointRepo.findPointBy.mockResolvedValue({
           id: userId,
           point: defaultPoint,
           updateMillis: Date.now() - 60000,
         });
-
-        // 결과 mocking
-        userDb.insertOrUpdate.mockResolvedValue(resultMockUserPoint);
+        pointRepo.insertPointWithTransaction.mockResolvedValue(
+          resultMockUserPoint,
+        );
 
         // when
         const result = await service.use(userId, { amount: useAmount });
