@@ -166,13 +166,14 @@ describe('PointService', () => {
     });
 
     describe('성공한다.', () => {
-      it('포인트 충전에 성공한다.', async () => {
+      it('기존 포인트 2000원에 포인트 1000원 충전에 성공한다.', async () => {
         // given
         const userId = 1;
+        const defaultPoint = 2000;
         const chargeAmount = 1000;
         const resultMockUserPoint: UserPoint = {
           id: userId,
-          point: chargeAmount,
+          point: defaultPoint + chargeAmount,
           updateMillis: Date.now(),
         };
         const success = GetUserPointResponse.of(resultMockUserPoint);
@@ -187,9 +188,11 @@ describe('PointService', () => {
         });
         userDb.selectById.mockResolvedValue({
           id: userId,
-          point: 0,
-          updateMillis: Date.now(),
+          point: defaultPoint,
+          updateMillis: Date.now() - 60000,
         });
+
+        // 결과 mocking
         userDb.insertOrUpdate.mockResolvedValue(resultMockUserPoint);
 
         // when
@@ -201,7 +204,80 @@ describe('PointService', () => {
     });
   });
 
-  describe('use', () => {});
+  /**
+   * 특정 유저의 포인트를 사용합니다.
+   * ### TC
+   * 1. 성공
+   * 2. 실패
+   * - `userId`가 양수가 아니라면 실패한다.
+   * - `pointDto.amount`가 양의 정수가 아니라면 실패한다.
+   */
+  describe('use', () => {
+    describe('실패한다.', () => {
+      it('`userId`가 양수가 아니라면 실패한다.', () => {
+        // given
+        const userId = -1;
+        const pointDto = { amount: 1000 };
+        const success = InvalidUserIdException;
+
+        // when
+        const promiseResult = service.use(userId, pointDto);
+        // then
+        expect(promiseResult).rejects.toBeInstanceOf(success);
+      });
+
+      it('사용하려는 포인트가 양수가 아니라면 실패한다.', () => {
+        // given
+        const userId = 1;
+        const pointDto = { amount: -1000 };
+        const success = InvalidPointAmountException;
+
+        // when
+        const promiseResult = service.use(userId, pointDto);
+        // then
+        expect(promiseResult).rejects.toBeInstanceOf(success);
+      });
+    });
+
+    describe('성공한다.', () => {
+      it('기존 포인트 3000원에 포인트 1000원 사용에 성공한다.', async () => {
+        // given
+        const userId = 1;
+        const defaultPoint = 3000;
+        const useAmount = 1000;
+
+        const resultMockUserPoint: UserPoint = {
+          id: userId,
+          point: defaultPoint - useAmount,
+          updateMillis: Date.now(),
+        };
+        const success = GetUserPointResponse.of(resultMockUserPoint);
+
+        // mocking
+        historyDb.insert.mockResolvedValue({
+          id: 1,
+          userId: userId,
+          type: TransactionType.USE,
+          amount: useAmount,
+          timeMillis: Date.now(),
+        });
+        userDb.selectById.mockResolvedValue({
+          id: userId,
+          point: defaultPoint,
+          updateMillis: Date.now() - 60000,
+        });
+
+        // 결과 mocking
+        userDb.insertOrUpdate.mockResolvedValue(resultMockUserPoint);
+
+        // when
+        const result = await service.use(userId, { amount: useAmount });
+        // then
+        expect(result).toEqual(success);
+        expect(result.point).toBe(success.point);
+      });
+    });
+  });
 });
 
 function createPointHistories(
