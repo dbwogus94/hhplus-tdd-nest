@@ -166,6 +166,25 @@ describe('PointService', () => {
         // then
         expect(promiseResult).rejects.toBeInstanceOf(success);
       });
+
+      it('충전 한도에 초과하면 실패한다.', () => {
+        // given
+        const userId = 1;
+        const defaultPoint = PointManager.MAX_POINT;
+        const chargeAmount = 1000;
+        const success = ConflictPointOperationException;
+
+        pointRepo.findPointBy.mockResolvedValue({
+          id: userId,
+          point: defaultPoint,
+          updateMillis: Date.now() - 60000,
+        });
+
+        // when
+        const promiseResult = service.charge(userId, { amount: chargeAmount });
+        // then
+        expect(promiseResult).rejects.toBeInstanceOf(success);
+      });
     });
 
     describe('성공한다.', () => {
@@ -231,6 +250,25 @@ describe('PointService', () => {
 
         // when
         const promiseResult = service.use(userId, pointDto);
+        // then
+        expect(promiseResult).rejects.toBeInstanceOf(success);
+      });
+
+      it('잔액부족이면 사용에 실패한다.', () => {
+        // given
+        const userId = 1;
+        const defaultPoint = PointManager.MIN_POINT;
+        const useAmount = 1000;
+        const success = ConflictPointOperationException;
+
+        pointRepo.findPointBy.mockResolvedValue({
+          id: userId,
+          point: defaultPoint,
+          updateMillis: Date.now() - 60000,
+        });
+
+        // when
+        const promiseResult = service.use(userId, { amount: useAmount });
         // then
         expect(promiseResult).rejects.toBeInstanceOf(success);
       });

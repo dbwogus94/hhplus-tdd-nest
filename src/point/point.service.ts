@@ -6,12 +6,14 @@ import {
   PatchPointRequest,
 } from './dto';
 import {
+  ConflictPointOperationException,
   InvalidPointAmountException,
   InvalidUserIdException,
 } from './exception';
 
-import { TransactionType } from './point.model';
+import { PointManager } from './component';
 import { PointRepositoryPort } from './point.repository';
+import { TransactionType } from './point.model';
 
 export abstract class PointServiceUseCase {
   /**
@@ -78,8 +80,13 @@ export class PointService extends PointServiceUseCase {
     if (pointDto.amount < 0) throw new InvalidPointAmountException();
 
     const { point: currantPoint } = await this.pointRepo.findPointBy(userId);
+    if (!PointManager.canChargePoint(currantPoint, pointDto.amount)) {
+      throw new ConflictPointOperationException();
+    }
+
+    const point = PointManager.addPoint(currantPoint, pointDto.amount);
     const result = await this.pointRepo.insertPointWithTransaction(userId, {
-      point: currantPoint + pointDto.amount,
+      point,
       amount: pointDto.amount,
       type: TransactionType.CHARGE,
     });
@@ -94,8 +101,13 @@ export class PointService extends PointServiceUseCase {
     if (pointDto.amount < 0) throw new InvalidPointAmountException();
 
     const { point: currantPoint } = await this.pointRepo.findPointBy(userId);
+    if (!PointManager.canUsePoint(currantPoint, pointDto.amount)) {
+      throw new ConflictPointOperationException();
+    }
+
+    const point = PointManager.subPoint(currantPoint, pointDto.amount);
     const result = await this.pointRepo.insertPointWithTransaction(userId, {
-      point: currantPoint - pointDto.amount,
+      point,
       amount: pointDto.amount,
       type: TransactionType.USE,
     });
