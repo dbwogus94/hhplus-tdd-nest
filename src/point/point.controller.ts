@@ -31,7 +31,7 @@ export class PointController {
   async history(
     @Param('id', ParseIntPipe) userId: number,
   ): Promise<GetPointHistoryResponse[]> {
-    return await this.pointService.getHistory(userId);
+    return await this.pointService.getHistories(userId);
   }
 
   /**
