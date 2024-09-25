@@ -130,8 +130,78 @@ describe('PointService', () => {
     });
   });
 
-  // describe('charge', () => {});
-  // describe('use', () => {});
+  /**
+   * 특정 유저의 포인트를 충전합니다.
+   * ### TC
+   * 1. 성공
+   * 2. 실패
+   * - `userId`가 양수가 아니라면 실패한다.
+   * - `pointDto.amount`가 양의 정수가 아니라면 실패한다.
+   */
+  describe('charge', () => {
+    describe('실패한다.', () => {
+      it('`userId`가 양수가 아니라면 실패한다.', () => {
+        // given
+        const userId = -1;
+        const pointDto = { amount: 1000 };
+        const success = InvalidUserIdException;
+
+        // when
+        const promiseResult = service.charge(userId, pointDto);
+        // then
+        expect(promiseResult).rejects.toBeInstanceOf(success);
+      });
+
+      it('충전하려는 포인트가 양수가 아니라면 실패한다.', () => {
+        // given
+        const userId = 1;
+        const pointDto = { amount: -1000 };
+        const success = InvalidPointAmountException;
+
+        // when
+        const promiseResult = service.charge(userId, pointDto);
+        // then
+        expect(promiseResult).rejects.toBeInstanceOf(success);
+      });
+    });
+
+    describe('성공한다.', () => {
+      it('포인트 충전에 성공한다.', async () => {
+        // given
+        const userId = 1;
+        const chargeAmount = 1000;
+        const resultMockUserPoint: UserPoint = {
+          id: userId,
+          point: chargeAmount,
+          updateMillis: Date.now(),
+        };
+        const success = GetUserPointResponse.of(resultMockUserPoint);
+
+        // mocking
+        historyDb.insert.mockResolvedValue({
+          id: 1,
+          userId: userId,
+          type: TransactionType.CHARGE,
+          amount: chargeAmount,
+          timeMillis: Date.now(),
+        });
+        userDb.selectById.mockResolvedValue({
+          id: userId,
+          point: 0,
+          updateMillis: Date.now(),
+        });
+        userDb.insertOrUpdate.mockResolvedValue(resultMockUserPoint);
+
+        // when
+        const result = await service.charge(userId, { amount: chargeAmount });
+        // then
+        expect(result).toEqual(success);
+        expect(result.point).toBe(success.point);
+      });
+    });
+  });
+
+  describe('use', () => {});
 });
 
 function createPointHistories(

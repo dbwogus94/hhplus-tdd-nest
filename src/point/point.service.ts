@@ -7,7 +7,12 @@ import {
   GetUserPointResponse,
   PatchPointRequest,
 } from './dto';
-import { InvalidUserIdException } from './exception';
+import {
+  InvalidPointAmountException,
+  InvalidUserIdException,
+} from './exception';
+
+import { TransactionType } from './point.model';
 
 /*
   TODO: 리펙터링
@@ -90,6 +95,8 @@ export abstract class PointServiceUseCase {
 
 @Injectable()
 export class PointService extends PointServiceUseCase {
+  readonly list = {};
+
   constructor(
     private readonly userDb: UserPointTable,
     private readonly historyDb: PointHistoryTable,
@@ -117,8 +124,20 @@ export class PointService extends PointServiceUseCase {
     userId: number,
     pointDto: PatchPointRequest,
   ): Promise<GetUserPointResponse> {
-    //
-    throw new Error('Method not implemented.');
+    if (userId < 0) throw new InvalidUserIdException();
+    if (pointDto.amount < 0) throw new InvalidPointAmountException();
+
+    await this.historyDb.insert(
+      userId,
+      pointDto.amount,
+      TransactionType.CHARGE,
+      Date.now(),
+    );
+
+    const userPoint = await this.userDb.selectById(userId);
+    const updatePoint = userPoint.point + pointDto.amount;
+    const result = await this.userDb.insertOrUpdate(userId, updatePoint);
+    return GetUserPointResponse.of(result);
   }
 
   override async use(
