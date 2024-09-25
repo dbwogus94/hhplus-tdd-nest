@@ -4,38 +4,34 @@ import {
   Get,
   NotFoundException,
   Param,
+  ParseIntPipe,
   Patch,
   ValidationPipe,
 } from '@nestjs/common';
 
-import { PointServiceUseCase } from './point.service';
 import {
-  GetUserPointResponse,
   GetPointHistoryResponse,
+  GetUserPointResponse,
   PatchPointRequest,
 } from './dto';
+import { PointServiceUseCase } from './point.service';
 
 @Controller('/point')
 export class PointController {
   constructor(private readonly pointService: PointServiceUseCase) {}
 
-  /**
-   * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
-   */
   @Get(':id')
-  async point(@Param('id') id): Promise<GetUserPointResponse> {
-    const userId = Number.parseInt(id);
-    return { id: userId, point: 0, updateMillis: Date.now() };
+  async point(
+    @Param('id', ParseIntPipe) userId: number,
+  ): Promise<GetUserPointResponse> {
+    return await this.pointService.getPoint(userId);
   }
 
-  /**
-   * TODO - 특정 유저의 포인트 충전/이용 내역을 조회하는 기능을 작성해주세요.
-   */
   @Get(':id/histories')
-  async history(@Param('id') id): Promise<GetPointHistoryResponse[]> {
-    const userId = Number.parseInt(id);
-    // return [];
-    throw new NotFoundException('미구현 API 입니다.');
+  async history(
+    @Param('id', ParseIntPipe) userId: number,
+  ): Promise<GetPointHistoryResponse[]> {
+    return await this.pointService.getHistories(userId);
   }
 
   /**
@@ -43,10 +39,9 @@ export class PointController {
    */
   @Patch(':id/charge')
   async charge(
-    @Param('id') id,
+    @Param('id', ParseIntPipe) userId: number,
     @Body(ValidationPipe) pointDto: PatchPointRequest,
   ): Promise<GetUserPointResponse> {
-    const userId = Number.parseInt(id);
     const amount = pointDto.amount;
 
     // return { id: userId, point: amount, updateMillis: Date.now() };
@@ -58,10 +53,9 @@ export class PointController {
    */
   @Patch(':id/use')
   async use(
-    @Param('id') id,
+    @Param('id', ParseIntPipe) userId: number,
     @Body(ValidationPipe) pointDto: PatchPointRequest,
   ): Promise<GetUserPointResponse> {
-    const userId = Number.parseInt(id);
     const amount = pointDto.amount;
     // return { id: userId, point: amount, updateMillis: Date.now() };
     throw new NotFoundException('미구현 API 입니다.');

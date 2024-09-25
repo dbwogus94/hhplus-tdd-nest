@@ -1,12 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { PointHistoryTable } from 'src/database/pointhistory.table';
 import { UserPointTable } from 'src/database/userpoint.table';
 import {
-  GetUserPointResponse,
   GetPointHistoryResponse,
+  GetUserPointResponse,
   PatchPointRequest,
 } from './dto';
+import { InvalidUserIdException } from './exception';
 
 /*
   TODO: 리펙터링
@@ -27,7 +28,7 @@ export abstract class PointServiceUseCase {
    * 특정 유저의 포인트 충전/이용 내역을 조회합니다.
    * @param userId
    */
-  abstract getHistory(userId: number): Promise<GetPointHistoryResponse[]>;
+  abstract getHistories(userId: number): Promise<GetPointHistoryResponse[]>;
 
   /**
    * 특정 유저의 포인트를 충전합니다.
@@ -97,24 +98,16 @@ export class PointService extends PointServiceUseCase {
   }
 
   override async getPoint(userId: number): Promise<GetUserPointResponse> {
-    if (userId == null) throw new BadRequestException('userId 필수 입니다.');
-    if (Number.isNaN(userId))
-      throw new BadRequestException('userId는 숫자형만 가능합니다.');
-    if (userId < 0)
-      throw new BadRequestException('userId는 양의 정수만 가능 합니다.');
+    if (userId < 0) throw new InvalidUserIdException();
 
     const userPoint = await this.userDb.selectById(userId);
     return GetUserPointResponse.of(userPoint);
   }
 
-  override async getHistory(
+  override async getHistories(
     userId: number,
   ): Promise<GetPointHistoryResponse[]> {
-    if (userId == null) throw new BadRequestException('userId 필수 입니다.');
-    if (Number.isNaN(userId))
-      throw new BadRequestException('userId는 숫자형만 가능합니다.');
-    if (userId < 0)
-      throw new BadRequestException('userId는 양의 정수만 가능 합니다.');
+    if (userId < 0) throw new InvalidUserIdException();
 
     const histories = await this.historyDb.selectAllByUserId(userId);
     return GetPointHistoryResponse.of(histories);
@@ -124,6 +117,7 @@ export class PointService extends PointServiceUseCase {
     userId: number,
     pointDto: PatchPointRequest,
   ): Promise<GetUserPointResponse> {
+    //
     throw new Error('Method not implemented.');
   }
 
