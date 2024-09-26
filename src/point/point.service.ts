@@ -93,6 +93,8 @@ export class PointService extends PointServiceUseCase {
         type: TransactionType.CHARGE,
       });
       return GetUserPointResponse.of(result);
+    } catch (error) {
+      throw error;
     } finally {
       releaseLock();
     }
@@ -119,6 +121,8 @@ export class PointService extends PointServiceUseCase {
         type: TransactionType.USE,
       });
       return GetUserPointResponse.of(result);
+    } catch (error) {
+      throw error;
     } finally {
       releaseLock();
     }

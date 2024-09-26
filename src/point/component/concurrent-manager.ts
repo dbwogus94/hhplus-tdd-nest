@@ -1,5 +1,3 @@
-import { randomInt } from 'crypto';
-
 export class ConcurrentManager {
   static readonly locks: Map<number, Promise<void>> = new Map();
 
@@ -16,8 +14,11 @@ export class ConcurrentManager {
       await this.locks.get(userId);
     }
 
-    let resolver;
-    const lockPromise = new Promise<void>((resolve) => (resolver = resolve));
+    let resolver: () => void;
+    let rejecter: () => void;
+    const lockPromise = new Promise<void>(
+      (resolve, reject) => ((resolver = resolve), (rejecter = reject)),
+    );
     // key에 값으로 <pending> 상태의 프로미스를 값으로 할당
     this.locks.set(userId, lockPromise);
 
@@ -25,49 +26,50 @@ export class ConcurrentManager {
     return () => {
       this.locks.delete(userId); // 락 해지
       resolver(); // <pending> -> resolve 상태로 변경 -> await 종료된다.
+      rejecter();
     };
   }
 }
 
-async function testConcurrency() {
-  const database = [];
-  async function charge(
-    userId: number,
-    dto: { amount: number },
-  ): Promise<void> {
-    const releaseLock = await ConcurrentManager.acquireLock(userId);
+// async function testConcurrency() {
+//   const database = [];
+//   async function charge(
+//     userId: number,
+//     dto: { amount: number },
+//   ): Promise<void> {
+//     const releaseLock = await ConcurrentManager.acquireLock(userId);
 
-    try {
-      const insert = (amount) =>
-        new Promise((resolve) =>
-          setTimeout(() => {
-            console.log(`포인트 : ${amount}`);
-            resolve(database.push(amount));
-          }, randomInt(300)),
-        );
+//     try {
+//       const insert = (amount) =>
+//         new Promise((resolve) =>
+//           setTimeout(() => {
+//             console.log(`포인트 : ${amount}`);
+//             resolve(database.push(amount));
+//           }, randomInt(300)),
+//         );
 
-      await insert(dto.amount);
-    } finally {
-      // 락 반납(해지)
-      releaseLock();
-    }
-  }
+//       await insert(dto.amount);
+//     } finally {
+//       // 락 반납(해지)
+//       releaseLock();
+//     }
+//   }
 
-  const userId = 100;
-  const tasks = [
-    charge(userId, { amount: 100 }),
-    charge(userId, { amount: 200 }),
-    charge(userId, { amount: 300 }),
-    charge(userId, { amount: 400 }),
-    charge(userId, { amount: 500 }),
-  ];
+//   const userId = 100;
+//   const tasks = [
+//     charge(userId, { amount: 100 }),
+//     charge(userId, { amount: 200 }),
+//     charge(userId, { amount: 300 }),
+//     charge(userId, { amount: 400 }),
+//     charge(userId, { amount: 500 }),
+//   ];
 
-  await Promise.all(tasks);
+//   await Promise.all(tasks);
 
-  console.log(database);
-}
+//   console.log(database);
+// }
 
-testConcurrency();
+// testConcurrency();
 
 // async function testServiceConcurrency() {
 //   const userDb = new UserPointTable();
