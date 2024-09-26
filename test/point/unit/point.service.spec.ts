@@ -45,6 +45,7 @@ describe('PointService', () => {
 
         // when
         const result = service.getPoint(userId);
+
         // then
         expect(result).rejects.toBeInstanceOf(success);
       });
@@ -68,6 +69,7 @@ describe('PointService', () => {
         const result = await service.getPoint(userId);
 
         // then
+        expect(result).toEqual(success);
         expect(result.id).toBe(success.id);
         expect(result.point).toBe(success.point);
       });

@@ -21,7 +21,7 @@ export class PointManager {
    * @returns 충전 가능 유무
    */
   static canChargePoint(currantPoint: number, amount: number) {
-    return currantPoint + amount < PointManager.MAX_POINT;
+    return currantPoint + amount <= PointManager.MAX_POINT;
   }
 
   /**
@@ -31,6 +31,6 @@ export class PointManager {
    * @returns 사용 가능 유무
    */
   static canUsePoint(currantPoint: number, amount: number) {
-    return currantPoint - amount > PointManager.MIN_POINT;
+    return currantPoint - amount >= PointManager.MIN_POINT;
   }
 }
